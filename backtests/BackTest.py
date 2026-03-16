@@ -25,6 +25,7 @@ if not os.path.exists(figs_dir):
 
 if __name__ == '__main__':
     datanames = ['SPY', '510050.SS','510300.SS', '510500.SS']
+    all_metrics = []
     for dataname in datanames:
         cerebro = bt.Cerebro()
         df = pd.read_csv(f'data/processed/{dataname}_2014_2024_clhov.csv', parse_dates=['datetime'], index_col='datetime')
@@ -36,12 +37,27 @@ if __name__ == '__main__':
         cerebro.addsizer(bt.sizers.PercentSizer, percents=10) # 每次交易10%的资金
         print(f'========== 回测 {dataname} ==========')
         print(f'初始资金: {cerebro.broker.getvalue():.2f}')
-        cerebro.run()
+        strategies = cerebro.run()
+        strategy = strategies[0]
+        
+        # 获取绩效指标
+        metrics = strategy.get_performance_metrics()
+        metrics['标的'] = dataname
+        all_metrics.append(metrics)
         final_value = cerebro.broker.getvalue()
         profit = final_value - 100000
-        print(f'最终资金: {final_value:.2f}')
+        # 打印核心指标
+        print(f'最终资金: {metrics["最终资金"]:.2f}')
         print(f'盈亏金额: {profit:.2f}')
         print(f'盈亏比例: {profit/100000*100:.2f}%')
+        print(f'总收益率: {metrics["总收益率"]:.2%}')
+        print(f'年化收益率: {metrics["年化收益率"]:.2%}')
+        print(f'夏普比率: {metrics["夏普比率"]:.2f}')
+        print(f'最大回撤: {metrics["最大回撤"]:.2%}')
+        print(f'最大回撤时长: {metrics["最大回撤时长(天)"]} 天')
+        print(f'总交易次数: {metrics["总交易次数"]}')
+        print(f'胜率: {metrics["胜率"]:.2%}')
+        print(f'年交易频率: {metrics["年交易频率"]:.1f} 次/年')
         log_path = os.path.join(backtests_dir, 'logs', f'log_sma_{dataname}.txt')
         print(f'日志路径: {log_path}')
         
